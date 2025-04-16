@@ -1,0 +1,33 @@
+Interconnected Distributed Operating System(IDOS)
+
+- algorithm
+  - 常用的算法库
+- clock
+  - 提供基本的时基单元
+- com
+  - 封装通信模块，可以选择多种通信方式
+  - 信号量
+  - 消息队列
+- heap
+  - 动态堆内存处理
+- list
+  - 链表化处理
+- log
+  - 全局log输出
+- mem
+  - 内存操作的一些接口
+- port
+  - 对芯片适配的封装
+- service
+  - 对当前设备服务的描述，用于处理分布式协同工作
+- task
+  - 函数实体
+- thread
+  - 线程切换
+- timer
+  - 提供定时器功能
+- trace
+  - 提供钩子函数功能
+- type
+  - 类型定义
+
