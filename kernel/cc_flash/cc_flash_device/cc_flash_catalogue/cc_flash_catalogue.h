@@ -51,12 +51,16 @@
 *  |                                                                                                 |            |
 *  |                                                                                                 |            |
 *  |-------------------------------------------------------------------------------------------------|-------     |
+*  |                                          parent ctrlidx[1]                                      | 4 Byte     |
+*  |-------------------------------------------------------------------------------------------------|-------     |
 *  |                                          info[1] folder / file                                  | 188 Byte   |
 *  |                                          ...                                                    |            |
 *  |                                          ...                                                    |            |
 *  |                                                                                                 |            |
 *  |-------------------------------------------------------------------------------------------------|-------     |
 *  |                                          prev address[1]                                        | 4 Byte     |
+*  |-------------------------------------------------------------------------------------------------|-------     |
+*  |                                          current address[1]                                     | 4 Byte     |
 *  |-------------------------------------------------------------------------------------------------|-------     |
 *  |                                          next address[1]                                        | 4 Byte     |
 *  |-------------------------------------------------------------------------------------------------|-------     |
@@ -107,6 +111,7 @@ typedef struct
     cc_flash_catalogue_info_content_union item;
     /* list */
     cc_uint32 prevaddr;
+    cc_uint32 curaddr;
     cc_uint32 nextaddr;
     /* reserve */
     cc_uint8 reserve[32];
@@ -121,6 +126,8 @@ typedef struct
     cc_flash_catalogue_enum type;
     /* catalogue name */
     cc_int8 name[CC_NAME_MAX_LEN];
+    /* parent */
+    cc_uint32 devicectrlidx;
     /* info */
     cc_flash_catalogue_info_struct info;
     /* list */
@@ -136,6 +143,7 @@ typedef struct
 ****************************************************************************************************/
 
 cc_result cc_flash_catalogue_init(cc_void);
+cc_result cc_flash_catalogue_read(cc_int8 *name,cc_int8 *path,cc_uint8 *buffer,cc_uint32 *length);
 cc_result cc_flash_catalogue_mainfunction(cc_void);
 
 #endif /* _CC_FLASH_CATALOGUE_H */

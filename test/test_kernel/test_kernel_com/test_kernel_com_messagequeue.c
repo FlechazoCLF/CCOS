@@ -1,17 +1,28 @@
 
 /****************************************************************************************************
-* File cc_flash_catalogue_file.h Start!
+* File test_kernel_com_messagequeue.c Start!
 ****************************************************************************************************/
 
-#ifndef _CC_FLASH_CATALOGUE_FILE_H
-#define _CC_FLASH_CATALOGUE_FILE_H
+/*
+ *
+ *  Copyright (c) 2024-2025 by flechazo. All rights reserved.
+ *
+ * Author : CarlChai LinFeng Chai flechazo
+ * Website: flechazo.mba
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2025-04-03     cc          the first version
+ *
+*/
 
 /****************************************************************************************************
 * Include
 ****************************************************************************************************/
 /* type */
-#include "cc_type.h"
+#include "cc_com_messagequeue.h"
 /* log */
+#include "cc_trace.h"
 /* sub module */
 /* components */
 
@@ -26,31 +37,43 @@
 * Type
 ****************************************************************************************************/
 
-/* cc_flash_catalogue_file */
-typedef struct
-{
-    /* info */
-    cc_uint32 ctrlidx;
-    /* length */
-    cc_uint32 length;
-    /* reserve */
-    cc_uint8 reserve[32];
-}cc_flash_catalogue_file_struct;
-
 /****************************************************************************************************
 * Global Variable
 ****************************************************************************************************/
 
 /****************************************************************************************************
-* Function
+* Function Impletement
 ****************************************************************************************************/
 
-cc_result cc_flash_catalogue_file_init(cc_void);
-cc_result cc_flash_catalogue_file_read(cc_flash_catalogue_struct *catalogue,cc_uint8 *buffer,cc_uint32 *length);
-cc_result cc_flash_catalogue_file_mainfunction(cc_void);
-
-#endif /* _CC_FLASH_CATALOGUE_FILE_H */
 /****************************************************************************************************
-* File cc_flash_catalogue_file.h End!
+* test_kernel_com_messagequeue_init()
 ****************************************************************************************************/
+cc_result test_kernel_com_messagequeue_init(cc_void)
+{
+    cc_result result = CC_E_OK;
 
+    do
+    {
+        /* check */
+        CHECK_PTR(result,CC_NULL_PTR);
+        /* init mq */
+        cc_com_messagequeue_init();
+        /* write */
+        cc_uint8 buffer[8] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07};
+        cc_uint8 *readpointer;
+        cc_uint32 readlen;
+        cc_uint8 readbuffer[8] = {0};
+        cc_com_messagequeue_write("mq",buffer,8);
+        /* read */
+        cc_com_messagequeue_read("mq",&readpointer,&readlen);
+        /* readout */
+        cc_com_messagequeue_readout("mq",readbuffer,&readlen);
+    }while(0u);
+
+    return result;
+}
+
+
+/****************************************************************************************************
+* File test_kernel_com_messagequeue.c End!
+****************************************************************************************************/

@@ -1,17 +1,28 @@
 
 /****************************************************************************************************
-* File cc_flash_catalogue_file.h Start!
+* File test_kernel_flash.c Start!
 ****************************************************************************************************/
 
-#ifndef _CC_FLASH_CATALOGUE_FILE_H
-#define _CC_FLASH_CATALOGUE_FILE_H
+/*
+ *
+ *  Copyright (c) 2024-2025 by flechazo. All rights reserved.
+ *
+ * Author : CarlChai LinFeng Chai flechazo
+ * Website: flechazo.mba
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2025-04-21     cc          the first version
+ *
+*/
 
 /****************************************************************************************************
 * Include
 ****************************************************************************************************/
 /* type */
-#include "cc_type.h"
+#include "cc_flash.h"
 /* log */
+#include "cc_trace.h"
 /* sub module */
 /* components */
 
@@ -26,31 +37,37 @@
 * Type
 ****************************************************************************************************/
 
-/* cc_flash_catalogue_file */
-typedef struct
-{
-    /* info */
-    cc_uint32 ctrlidx;
-    /* length */
-    cc_uint32 length;
-    /* reserve */
-    cc_uint8 reserve[32];
-}cc_flash_catalogue_file_struct;
-
 /****************************************************************************************************
 * Global Variable
 ****************************************************************************************************/
 
 /****************************************************************************************************
-* Function
+* Function Impletement
 ****************************************************************************************************/
 
-cc_result cc_flash_catalogue_file_init(cc_void);
-cc_result cc_flash_catalogue_file_read(cc_flash_catalogue_struct *catalogue,cc_uint8 *buffer,cc_uint32 *length);
-cc_result cc_flash_catalogue_file_mainfunction(cc_void);
-
-#endif /* _CC_FLASH_CATALOGUE_FILE_H */
 /****************************************************************************************************
-* File cc_flash_catalogue_file.h End!
+* test_kernel_flash_init()
 ****************************************************************************************************/
+cc_result test_kernel_flash_init(cc_void)
+{
+    cc_result result = CC_E_OK;
+    cc_uint8 buffer[256] = {0};
+    cc_uint32 length = 0;
 
+    do
+    {
+        /* check */
+        CHECK_PTR(result,CC_NULL_PTR);
+        /* init flash */
+        cc_flash_init();
+        /* read */
+        cc_flash_read("flash/test/file",buffer,&length);
+    }while(0u);
+
+    return result;
+}
+
+
+/****************************************************************************************************
+* File test_kernel_flash.c End!
+****************************************************************************************************/

@@ -1,6 +1,6 @@
 
 /****************************************************************************************************
-* File cc_flash_catalogue_file.c Start!
+* File cc_com_ringbuffer.c Start!
 ****************************************************************************************************/
 
 /*
@@ -12,7 +12,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2025-04-12     cc          the first version
+ * 2025-04-18     cc          the first version
  *
 */
 
@@ -20,13 +20,10 @@
 * Include
 ****************************************************************************************************/
 /* type */
-#include "cc_flash_catalogue_file.h"
+#include "cc_com_ringbuffer.h"
 /* log */
-#include "cc_trace.h"
 /* sub module */
 /* components */
-#include "cc_flash_catalogue.h"
-#include "cc_flash_device_cfg.h"
 
 /* ui */
 /* cpp */
@@ -43,19 +40,19 @@
 * Global Variable
 ****************************************************************************************************/
 
-/* cc_flash_catalogue_file */
-cc_flash_catalogue_file_struct cc_flash_catalogue_file_t;
+/* cc_com_ringbuffer */
+cc_com_ringbuffer_struct cc_com_ringbuffer_t;
 /* init flag */
-cc_boolean cc_flash_catalogue_file_initflag = CC_FALSE;
+cc_boolean cc_com_ringbuffer_initflag = CC_FALSE;
 
 /****************************************************************************************************
 * Function Impletement
 ****************************************************************************************************/
 
 /****************************************************************************************************
-* cc_flash_catalogue_file_init()
+* cc_com_ringbuffer_init()
 ****************************************************************************************************/
-cc_result cc_flash_catalogue_file_init(cc_void)
+cc_result cc_com_ringbuffer_init(cc_void)
 {
     cc_result result = CC_E_OK;
 
@@ -68,7 +65,7 @@ cc_result cc_flash_catalogue_file_init(cc_void)
         /* register object */
 
 
-        /* init cc_flash_catalogue_file */
+        /* init cc_com_ringbuffer */
 
 
         /* init service */
@@ -83,67 +80,11 @@ cc_result cc_flash_catalogue_file_init(cc_void)
     return result;
 }
 
-/****************************************************************************************************
-* cc_flash_catalogue_file_read()
-****************************************************************************************************/
-cc_result cc_flash_catalogue_file_read(cc_flash_catalogue_struct *catalogue,cc_uint8 *buffer,cc_uint32 *length)
-{
-    cc_result result = CC_E_OK;
-    cc_flash_device_func_struct func;
-    cc_flash_catalogue_struct iterator;
-    cc_uint32 bufferlen;
-    cc_uint32 address;
-    cc_uint32 len;
-
-    do
-    {
-        /* check parameter */
-        CHECK_PTR(result,catalogue);
-        CHECK_PTR(result,buffer);
-        CHECK_PTR(result,length);
-        /* impletement */
-        /* get func */
-        cc_flash_device_cfg_getfunc(catalogue->devicectrlidx,&func);
-        /* check func */
-        CHECK_PTR(result,func.read);
-        /* check file */
-        ____________________________TO_DO__________________________
-        /* read */
-        bufferlen = *length;
-        *length = 0;
-        address = catalogue->info.curaddr;
-        func.read(&iterator,address,CC_FLASH_CATALOGUE_SIZE);
-        /* iterator */
-        while (bufferlen > CC_NULL)
-        {
-            /* check */
-
-            /* read */
-            len = iterator.info.item.file.length;
-            address = iterator.info.curaddr;
-            func.read((buffer + (*length)),address,len);
-            *length += len;
-
-            /* next */
-            if(iterator.info.nextaddr == CC_NULL)
-            {
-                break;
-            }
-
-            /* next */
-            address = iterator.info.nextaddr;
-            /* read catalogue */
-            func.read(&iterator,address,CC_FLASH_CATALOGUE_SIZE);
-        }
-    }while(0u);
-
-    return result;
-}
 
 /****************************************************************************************************
-* cc_flash_catalogue_file_mainfunction()
+* cc_com_ringbuffer_mainfunction()
 ****************************************************************************************************/
-cc_result cc_flash_catalogue_file_mainfunction(cc_void)
+cc_result cc_com_ringbuffer_mainfunction(cc_void)
 {
     cc_result result = CC_E_OK;
 
@@ -156,6 +97,6 @@ cc_result cc_flash_catalogue_file_mainfunction(cc_void)
 }
 
 /****************************************************************************************************
-* File cc_flash_catalogue_file.c End!
+* File cc_com_ringbuffer.c End!
 ****************************************************************************************************/
 

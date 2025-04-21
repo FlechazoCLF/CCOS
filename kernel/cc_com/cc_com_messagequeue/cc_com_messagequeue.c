@@ -53,6 +53,8 @@ cc_com_messagequeue_struct cc_com_messagequeue_t;
 cc_boolean cc_com_messagequeue_initflag = CC_FALSE;
 /* buffer */
 cc_uint8 cc_com_messagequeue_buffer[CC_COM_MESSAGEQUEUE_CFG_BUFFER_SIZE];
+/* info header */
+cc_uint8 cc_com_messagequeue_buffer_info_header[CC_COM_MESSAGEQUEUE_BUFFER_INFO_HEADER_SIZE] = {0xCC,0xCC,0xCC,0xCC};
 
 /****************************************************************************************************
 * Function Impletement
@@ -122,6 +124,7 @@ cc_result cc_com_messagequeue_callback(cc_int8 *name,cc_com_messagequeue_state_e
 cc_result cc_com_messagequeue_item_init(cc_com_messagequeue_item_struct *item)
 {
     cc_result result = CC_E_OK;
+    cc_int8 name[CC_NAME_MAX_LEN] = "mq";
 
     do
     {
@@ -129,13 +132,15 @@ cc_result cc_com_messagequeue_item_init(cc_com_messagequeue_item_struct *item)
         CHECK_PTR(result,item);
         /* item init */
         item->ctrlidx = 0u;
+        cc_mem_strncpy(item->name,name,CC_NAME_MAX_LEN);
         item->state = CC_QUEUE_STATE_UNINIT;
         item->buffer = cc_com_messagequeue_buffer;
         item->length = CC_COM_MESSAGEQUEUE_CFG_BUFFER_SIZE;
+        item->queuenum = 8;
+        item->queuesize = CC_COM_MESSAGEQUEUE_CFG_BUFFER_SIZE / item->queuenum - sizeof(cc_com_messagequeue_operate_info_struct);
         item->operate.readpointer = item->buffer;
         item->operate.writepointer = item->buffer;
-        item->operate.length = CC_NULL;
-        item->operate.uselength = CC_NULL;
+        item->operate.usenum = 0;
         cc_lock_create("lock mq",CC_LOCK_TYPE_MUTEX,&item->lock);
         item->callback = cc_com_messagequeue_callback;
         cc_list_init(&item->list);
@@ -341,7 +346,7 @@ cc_result cc_com_messagequeue_item_gettail(cc_com_messagequeue_item_struct *item
 /****************************************************************************************************
 * cc_com_messagequeue_create()
 ****************************************************************************************************/
-cc_result cc_com_messagequeue_create(cc_uint8 *ctrlidx,cc_int8 *name,cc_void *buffer,cc_uint32 length)
+cc_result cc_com_messagequeue_create(cc_uint8 *ctrlidx,cc_int8 *name,cc_void *buffer,cc_uint32 length,cc_uint32 queuenum,cc_uint32 *queuesize)
 {
     cc_result result = CC_E_OK;
     cc_com_messagequeue_item_struct *item;
@@ -367,10 +372,11 @@ cc_result cc_com_messagequeue_create(cc_uint8 *ctrlidx,cc_int8 *name,cc_void *bu
         item->state = CC_QUEUE_STATE_UNINIT;
         item->buffer = buffer;
         item->length = length;
+        item->queuenum = queuenum;
+        item->queuesize = length / item->queuenum - sizeof(cc_com_messagequeue_operate_info_struct);
         item->operate.readpointer = item->buffer;
         item->operate.writepointer = item->buffer;
-        item->operate.length = CC_NULL;
-        item->operate.uselength = CC_NULL;
+        item->operate.usenum = 0;
         /* create lock */
         cc_lock_create(name,CC_LOCK_TYPE_MUTEX,&item->lock);
         item->callback = cc_com_messagequeue_callback;
@@ -381,6 +387,7 @@ cc_result cc_com_messagequeue_create(cc_uint8 *ctrlidx,cc_int8 *name,cc_void *bu
         item->state = CC_QUEUE_STATE_INIT;
         /* output ctrlidx */
         *ctrlidx = item->ctrlidx;
+        *queuesize = item->queuesize;
     }while(0u);
 
     return result;
@@ -412,12 +419,67 @@ cc_result cc_com_messagequeue_delete(cc_int8 *name)
 }
 
 /****************************************************************************************************
+* cc_com_messagequeue_operate_movereader()
+****************************************************************************************************/
+cc_result cc_com_messagequeue_operate_movereader(cc_com_messagequeue_item_struct *item)
+{
+    cc_result result = CC_E_OK;
+    void *newreadpointer;
+
+    do
+    {
+        /* check parameter */
+        CHECK_LOGIC(result,(cc_com_messagequeue_initflag == CC_TRUE));
+        CHECK_PTR(result,item);
+        CHECK_LOGIC(result,(item->operate.usenum > 0));
+        /* impletement */
+        newreadpointer = (cc_uint8 *)item->operate.readpointer + item->queuesize + sizeof(cc_com_messagequeue_operate_info_struct);
+        if(newreadpointer > ((cc_uint8 *)item->buffer + item->length))
+        {
+            newreadpointer = item->buffer;
+        }
+        /* output */
+        item->operate.readpointer = newreadpointer;
+    }while(0u);
+
+    return result;
+}
+
+/****************************************************************************************************
+* cc_com_messagequeue_operate_movewriter()
+****************************************************************************************************/
+cc_result cc_com_messagequeue_operate_movewriter(cc_com_messagequeue_item_struct *item)
+{
+    cc_result result = CC_E_OK;
+    void *newwritpointer;
+
+    do
+    {
+        /* check parameter */
+        CHECK_LOGIC(result,(cc_com_messagequeue_initflag == CC_TRUE));
+        CHECK_PTR(result,item);
+        CHECK_LOGIC(result,(item->operate.usenum <= item->queuenum));
+        /* impletement */
+        newwritpointer = (cc_uint8 *)item->operate.writepointer + item->queuesize + sizeof(cc_com_messagequeue_operate_info_struct);
+        if(newwritpointer > ((cc_uint8 *)item->buffer + item->length))
+        {
+            newwritpointer = item->buffer;
+        }
+        /* output */
+        item->operate.writepointer = newwritpointer;
+    }while(0u);
+
+    return result;
+}
+
+/****************************************************************************************************
 * cc_com_messagequeue_read()
 ****************************************************************************************************/
 cc_result cc_com_messagequeue_read(cc_int8 *name,cc_void **buffer,cc_uint32 *length)
 {
     cc_result result = CC_E_OK;
     cc_com_messagequeue_item_struct *item;
+    cc_com_messagequeue_operate_info_struct *info;
 
     do
     {
@@ -430,10 +492,17 @@ cc_result cc_com_messagequeue_read(cc_int8 *name,cc_void **buffer,cc_uint32 *len
         /* find messagequeue */
         CHECK_FUNC(result,cc_com_messagequeue_item_find(name,&item));
 
+        /* check queue */
+        CHECK_LOGIC(result,(item->operate.usenum > 0));
+        /* get buffer info */
+        info = item->operate.readpointer;
+        CHECK_FUNC(result,cc_mem_cmp(cc_com_messagequeue_buffer_info_header,info->header,CC_COM_MESSAGEQUEUE_BUFFER_INFO_HEADER_SIZE));
         /* return pointer */
-        *buffer = item->operate.readpointer;
-        *length = item->operate.length;
-        item->operate.uselength = item->operate.length;
+        *buffer = (cc_uint8 *)item->operate.readpointer + sizeof(cc_com_messagequeue_operate_info_struct);
+        *length = info->length;
+        /* move reader => cc_com_messagequeue_release() */
+        /* item->operate.usenum--; */
+        /* cc_com_messagequeue_operate_movereader(item); */
     }while(0u);
 
     return result;
@@ -446,6 +515,7 @@ cc_result cc_com_messagequeue_readout(cc_int8 *name,cc_void *buffer,cc_uint32 *l
 {
     cc_result result = CC_E_OK;
     cc_com_messagequeue_item_struct *item;
+    cc_com_messagequeue_operate_info_struct *info;
 
     do
     {
@@ -457,13 +527,15 @@ cc_result cc_com_messagequeue_readout(cc_int8 *name,cc_void *buffer,cc_uint32 *l
 
         /* find messagequeue */
         CHECK_FUNC(result,cc_com_messagequeue_item_find(name,&item));
-        CHECK_LOGIC(result,(item->operate.length > 0));
-
+        CHECK_LOGIC(result,(item->operate.usenum > 0));
+        /* get buffer info */
+        info = item->operate.readpointer;
+        CHECK_FUNC(result,cc_mem_cmp(cc_com_messagequeue_buffer_info_header,info->header,CC_COM_MESSAGEQUEUE_BUFFER_INFO_HEADER_SIZE));
         /* copy buffer */
-        CHECK_FUNC(result,cc_mem_cpy(buffer,item->operate.readpointer,item->operate.length));
-        item->operate.readpointer += item->operate.length;
-        item->operate.length = 0;
-
+        CHECK_FUNC(result,cc_mem_cpy(buffer,(cc_uint8 *)item->operate.readpointer + sizeof(cc_com_messagequeue_operate_info_struct),info->length));
+        /* move reader */
+        item->operate.usenum--;
+        cc_com_messagequeue_operate_movereader(item);
     }while(0u);
 
     return result;
@@ -472,10 +544,11 @@ cc_result cc_com_messagequeue_readout(cc_int8 *name,cc_void *buffer,cc_uint32 *l
 /****************************************************************************************************
 * cc_com_messagequeue_release()
 ****************************************************************************************************/
-cc_result cc_com_messagequeue_release(cc_int8 *name,cc_void *buffer,cc_uint32 length)
+cc_result cc_com_messagequeue_release(cc_int8 *name,cc_void *buffer)
 {
     cc_result result = CC_E_OK;
     cc_com_messagequeue_item_struct *item;
+    void *newreadpointer;
 
     do
     {
@@ -483,18 +556,32 @@ cc_result cc_com_messagequeue_release(cc_int8 *name,cc_void *buffer,cc_uint32 le
         CHECK_LOGIC(result,(cc_com_messagequeue_initflag == CC_TRUE));
         CHECK_PTR(result,name);
         CHECK_PTR(result,buffer);
-        CHECK_LOGIC(result,(length > 0));
 
         /* find messagequeue */
         CHECK_FUNC(result,cc_com_messagequeue_item_find(name,&item));
-        CHECK_LOGIC(result,(item->operate.length > 0));
-        CHECK_LOGIC(result,(length <= item->operate.length));
-
+        CHECK_LOGIC(result,(item->operate.usenum > 0));
+        /* global check */
+        CHECK_LOGIC(result,(item->buffer < buffer));
+        CHECK_LOGIC(result,(buffer < ((cc_uint8)item->buffer + item->length)));
+        /* operate check */
+        if(item->operate.writepointer >= item->operate.readpointer)
+        {
+            CHECK_LOGIC(result,(item->operate.readpointer <= buffer));
+            CHECK_LOGIC(result,(buffer <= item->operate.writepointer));
+        }
+        else
+        {
+            CHECK_LOGIC(result,((item->operate.readpointer <= buffer) || (buffer <= item->operate.writepointer)));
+        }
         /* release */
-        CHECK_LOGIC(result,(buffer >= item->operate.readpointer));
-        item->operate.readpointer = (cc_uint8 *)buffer + length;
-        item->operate.length -= length;
-
+        newreadpointer = (cc_uint8 *)item->buffer + \
+                          ((cc_uint8 *)buffer - (cc_uint8 *)item->buffer) /\
+                           (item->queuesize + sizeof(cc_com_messagequeue_operate_info_struct)) *\
+                           (item->queuesize + sizeof(cc_com_messagequeue_operate_info_struct));
+        item->operate.readpointer = newreadpointer;
+        /* move reader */
+        item->operate.usenum--;
+        cc_com_messagequeue_operate_movereader(item);
     }while(0u);
 
     return result;
@@ -507,6 +594,7 @@ cc_result cc_com_messagequeue_write(cc_int8 *name,cc_void *buffer,cc_uint32 leng
 {
     cc_result result = CC_E_OK;
     cc_com_messagequeue_item_struct *item;
+    cc_com_messagequeue_operate_info_struct info;
 
     do
     {
@@ -519,14 +607,19 @@ cc_result cc_com_messagequeue_write(cc_int8 *name,cc_void *buffer,cc_uint32 leng
         /* find messagequeue */
         CHECK_FUNC(result,cc_com_messagequeue_item_find(name,&item));
         CHECK_LOGIC(result,(length > 0));
-        CHECK_LOGIC(result,(length <= item->length));
+        CHECK_LOGIC(result,(length <= item->queuesize));
+        CHECK_LOGIC(result,(item->operate.usenum < item->queuenum));
 
         /* write */
+        cc_mem_cpy(info.header,cc_com_messagequeue_buffer_info_header,CC_COM_MESSAGEQUEUE_BUFFER_INFO_HEADER_SIZE);
+        info.length = length;
+        /* write info */
+        cc_mem_cpy(item->operate.writepointer,&info,sizeof(cc_com_messagequeue_operate_info_struct));
         ____________________________TO_DO__________________________
-        CHECK_FUNC(result,cc_mem_cpy(item->operate.writepointer,buffer,length));
-        item->operate.writepointer += length;
-        item->operate.length += length;
-
+        CHECK_FUNC(result,cc_mem_cpy((cc_uint8 *)item->operate.writepointer + sizeof(cc_com_messagequeue_operate_info_struct),buffer,length));
+        /* move writer */
+        item->operate.usenum++;
+        cc_com_messagequeue_operate_movewriter(item);
     }while(0u);
 
     return result;

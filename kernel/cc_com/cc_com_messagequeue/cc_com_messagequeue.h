@@ -24,6 +24,9 @@
 * Define
 ****************************************************************************************************/
 
+/* info header */
+#define CC_COM_MESSAGEQUEUE_BUFFER_INFO_HEADER_SIZE (4u)
+
 /****************************************************************************************************
 * Type
 ****************************************************************************************************/
@@ -43,13 +46,19 @@ typedef enum
     CC_QUEUE_STATE_END
 }cc_com_messagequeue_state_enum;
 
+/* cc_queue_operate_info */
+typedef struct
+{
+    cc_uint8 header[CC_COM_MESSAGEQUEUE_BUFFER_INFO_HEADER_SIZE];
+    cc_uint32 length;
+}cc_com_messagequeue_operate_info_struct;
+
 /* cc_queue_operate */
 typedef struct
 {
     cc_void *readpointer;
     cc_void *writepointer;
-    cc_uint32 length;
-    cc_uint32 uselength;
+    cc_uint32 usenum;
 }cc_com_messagequeue_operate_struct;
 
 /* cc_com_messagequeue_item_struct */
@@ -64,6 +73,8 @@ typedef struct
     /* buffer pointer */
     cc_void *buffer;
     cc_uint32 length;
+    cc_uint32 queuenum;
+    cc_uint32 queuesize;
     /* operate */
     cc_com_messagequeue_operate_struct operate;
     /* mutex lock */
@@ -98,6 +109,12 @@ typedef struct cc_com_messagequeue_struct_T
 ****************************************************************************************************/
 
 cc_result cc_com_messagequeue_init(cc_void);
+cc_result cc_com_messagequeue_create(cc_uint8 *ctrlidx,cc_int8 *name,cc_void *buffer,cc_uint32 length,cc_uint32 queuenum,cc_uint32 *queuesize);
+cc_result cc_com_messagequeue_delete(cc_int8 *name);
+cc_result cc_com_messagequeue_read(cc_int8 *name,cc_void **buffer,cc_uint32 *length);
+cc_result cc_com_messagequeue_readout(cc_int8 *name,cc_void *buffer,cc_uint32 *length);
+cc_result cc_com_messagequeue_release(cc_int8 *name,cc_void *buffer);
+cc_result cc_com_messagequeue_write(cc_int8 *name,cc_void *buffer,cc_uint32 length);
 cc_result cc_com_messagequeue_mainfunction(cc_void);
 cc_result cc_com_messagequeue_recv(cc_int8 *dstname,cc_int8 *srcname,cc_uint8 *data,cc_uint16 len,cc_service_msgtype_enum type);
 

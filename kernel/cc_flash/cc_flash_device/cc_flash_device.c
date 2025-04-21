@@ -380,7 +380,7 @@ cc_result cc_flash_device_read(cc_int8 *name,cc_int8 *path,cc_uint8 *buffer,cc_u
         cataloguepath = path;
         cc_mem_strtok(&cataloguename,&cataloguepath,"/");
         /* find catalogue */
-        
+        cc_flash_catalogue_read(cataloguename,cataloguepath,buffer,length);
     }while(0u);
 
     return result;

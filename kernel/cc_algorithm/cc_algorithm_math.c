@@ -606,6 +606,52 @@ cc_result cc_algorithm_math_swaparray(cc_uint8 *array,cc_uint16 length)
 }
 
 /****************************************************************************************************
+* cc_algorithm_math_getrandom()
+****************************************************************************************************/
+cc_result cc_algorithm_math_lcg(cc_uint32 *value,cc_uint32 multiplier,cc_uint32 addend,cc_uint32 modulo)
+{
+    cc_result result = CC_E_OK;
+    static cc_uint32 seed = 0;
+
+    do
+    {
+        /* check parameter */
+        CHECK_PTR(result,value);
+        /* impletement */
+        if(seed == 0)
+        {
+            /* init seed */
+            seed = &seed;
+        }
+        /* value(n+1) = ((multiplier * value(n)) + addend) % modulo */
+        seed = ((multiplier * seed) + addend) % modulo;
+    }while(0u);
+
+    return result;
+}
+
+/****************************************************************************************************
+* cc_algorithm_math_getrandom()
+****************************************************************************************************/
+cc_result cc_algorithm_math_getrandom(cc_uint32 *value,cc_uint32 min,cc_uint32 max)
+{
+    cc_result result = CC_E_OK;
+
+    do
+    {
+        /* check parameter */
+        CHECK_PTR(result,value);
+        CHECK_LOGIC(result,(max > min));
+        /* impletement */
+        cc_algorithm_math_lcg(value,CC_ALGORITHM_MATH_LCG_MULTIPLIER,CC_ALGORITHM_MATH_LCG_ADDEND,(max - min));
+        /* output */
+        *value += min;
+    }while(0u);
+
+    return result;
+}
+
+/****************************************************************************************************
 * File cc_algorithm_math.c End!
 ****************************************************************************************************/
 

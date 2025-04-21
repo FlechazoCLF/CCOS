@@ -1,10 +1,10 @@
 
 /****************************************************************************************************
-* File cc_flash_catalogue_file.h Start!
+* File cc_com_ringbuffer.h Start!
 ****************************************************************************************************/
 
-#ifndef _CC_FLASH_CATALOGUE_FILE_H
-#define _CC_FLASH_CATALOGUE_FILE_H
+#ifndef _CC_COM_RINGBUFFER_H
+#define _CC_COM_RINGBUFFER_H
 
 /****************************************************************************************************
 * Include
@@ -26,16 +26,11 @@
 * Type
 ****************************************************************************************************/
 
-/* cc_flash_catalogue_file */
+/* cc_com_ringbuffer */
 typedef struct
 {
-    /* info */
-    cc_uint32 ctrlidx;
-    /* length */
-    cc_uint32 length;
-    /* reserve */
-    cc_uint8 reserve[32];
-}cc_flash_catalogue_file_struct;
+    cc_uint8 id;
+}cc_com_ringbuffer_struct;
 
 /****************************************************************************************************
 * Global Variable
@@ -45,12 +40,11 @@ typedef struct
 * Function
 ****************************************************************************************************/
 
-cc_result cc_flash_catalogue_file_init(cc_void);
-cc_result cc_flash_catalogue_file_read(cc_flash_catalogue_struct *catalogue,cc_uint8 *buffer,cc_uint32 *length);
-cc_result cc_flash_catalogue_file_mainfunction(cc_void);
+cc_result cc_com_ringbuffer_init(cc_void);
+cc_result cc_com_ringbuffer_mainfunction(cc_void);
 
-#endif /* _CC_FLASH_CATALOGUE_FILE_H */
+#endif /* _CC_COM_RINGBUFFER_H */
 /****************************************************************************************************
-* File cc_flash_catalogue_file.h End!
+* File cc_com_ringbuffer.h End!
 ****************************************************************************************************/
 

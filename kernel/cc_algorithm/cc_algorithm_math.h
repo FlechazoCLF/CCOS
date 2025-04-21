@@ -28,6 +28,10 @@ extern "C" {
 /* Taylor series */
 #define CC_ALGORITHM_MATH_TAYLOR_ACCURACY (20u)
 
+/* lcg */
+#define CC_ALGORITHM_MATH_LCG_MULTIPLIER (1103515245)
+#define CC_ALGORITHM_MATH_LCG_ADDEND (12345)
+
 /****************************************************************************************************
 * Type Define
 ****************************************************************************************************/
@@ -66,6 +70,9 @@ cc_result cc_algorithm_math_powercalc(cc_uint32 *value,cc_uint32 x,cc_uint32 p);
 /* swap */
 cc_result cc_algorithm_math_swapvalue(cc_uint8 *dst,cc_uint8 *src);
 cc_result cc_algorithm_math_swaparray(cc_uint8 *array,cc_uint16 length);
+/* random */
+cc_result cc_algorithm_math_lcg(cc_uint32 *value,cc_uint32 multiplier,cc_uint32 addend,cc_uint32 modulo);
+cc_result cc_algorithm_math_getrandom(cc_uint32 *value,cc_uint32 min,cc_uint32 max);
 
 #ifdef __cplusplus
 }
